@@ -1,0 +1,262 @@
+@import 'tailwindcss';
+
+/* ==================================================================== *
+ * Sistema visual
+ * -------------------------------------------------------------------- *
+ * Paleta editorial: tinta profunda, ouro sóbrio e uma cor por classe de
+ * herdeiro. As cores de classe são as mesmas na árvore, nos cartões e nos
+ * gráficos — quem vê azul sabe que é o cônjuge, em qualquer lugar da tela.
+ * ==================================================================== */
+
+@theme {
+  --font-sans:
+    'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Tinta: azul-carvão quente, escurecendo em direção ao fundo da página. */
+  --ink-900: #080a12;
+  --ink-800: #0c101b;
+  --ink-700: #121724;
+  --ink-600: #1a2031;
+  --ink-500: #232b40;
+
+  --surface: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.062);
+  --surface-3: rgba(255, 255, 255, 0.095);
+  --border: rgba(255, 255, 255, 0.085);
+  --border-forte: rgba(255, 255, 255, 0.17);
+
+  --texto: #f0f3fa;
+  --texto-2: #aab4cb;
+  --texto-3: #717d99;
+
+  --ouro: #e8be5a;
+  --ouro-claro: #f7d78e;
+  --ouro-fundo: rgba(232, 190, 90, 0.13);
+  --ouro-contraste: #191204;
+
+  --c-conjuge: #7fa2f7;
+  --c-descendente: #46cda3;
+  --c-ascendente: #bd92f2;
+  --c-colateral: #f4a066;
+  --c-legado: #f2799c;
+  --c-meacao: #94a2be;
+  --c-fora: #4c5872;
+
+  --ok: #46cda3;
+  --aviso: #f0b23c;
+  --perigo: #f4677f;
+
+  /* Quanto de cor entra nas faixas de partilha. No escuro a banda precisa ser
+     forte para o rótulo quase preto contrastar; no claro, o inverso. */
+  --faixa: 76%;
+  --faixa-ativa: 92%;
+
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  --sombra-alta: 0 2px 6px rgba(0, 0, 0, 0.35), 0 28px 70px -22px rgba(0, 0, 0, 0.75);
+  --sombra-ouro: 0 8px 26px -12px rgba(232, 190, 90, 0.55);
+}
+
+:root[data-tema='claro'] {
+  color-scheme: light;
+
+  /* Papel: neutro levemente quente, para conversar com a serifa. */
+  --ink-900: #f7f6f3;
+  --ink-800: #fdfcfa;
+  --ink-700: #ffffff;
+  --ink-600: #f2f1ed;
+  --ink-500: #e7e5df;
+
+  --surface: rgba(28, 25, 20, 0.028);
+  --surface-2: rgba(28, 25, 20, 0.055);
+  --surface-3: rgba(28, 25, 20, 0.085);
+  --border: rgba(28, 25, 20, 0.115);
+  --border-forte: rgba(28, 25, 20, 0.22);
+
+  --texto: #171a22;
+  --texto-2: #4c5464;
+  --texto-3: #666e7e;
+
+  --ouro: #8f640b;
+  --ouro-claro: #74510a;
+  --ouro-fundo: rgba(157, 111, 14, 0.1);
+  --ouro-contraste: #fffaf0;
+
+  --c-conjuge: #33529f;
+  --c-descendente: #0d7d5f;
+  --c-ascendente: #6e3aa8;
+  --c-colateral: #b0561a;
+  --c-legado: #b93459;
+  --c-meacao: #5b6579;
+  --c-fora: #9aa2b1;
+
+  --ok: #0d7d5f;
+  --aviso: #9a6a0d;
+  --perigo: #b93446;
+
+  --faixa: 40%;
+  --faixa-ativa: 58%;
+
+  --sombra: 0 1px 2px rgba(28, 25, 20, 0.05), 0 10px 26px -14px rgba(28, 25, 20, 0.18);
+  --sombra-alta: 0 2px 8px rgba(28, 25, 20, 0.07), 0 28px 64px -24px rgba(28, 25, 20, 0.26);
+  --sombra-ouro: 0 8px 24px -14px rgba(157, 111, 14, 0.5);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ink-900);
+  color: var(--texto);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--ouro) 32%, transparent);
+  color: var(--texto);
+}
+
+/* Luz difusa ao fundo — dá profundidade sem competir com o conteúdo. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(64rem 42rem at 8% -12%, rgba(127, 162, 247, 0.11), transparent 62%),
+    radial-gradient(52rem 38rem at 96% 4%, rgba(232, 190, 90, 0.085), transparent 64%),
+    radial-gradient(48rem 36rem at 46% 112%, rgba(70, 205, 163, 0.06), transparent 62%);
+}
+
+:root[data-tema='claro'] body::before {
+  background:
+    radial-gradient(64rem 42rem at 8% -12%, rgba(51, 82, 159, 0.07), transparent 62%),
+    radial-gradient(52rem 38rem at 96% 4%, rgba(157, 111, 14, 0.07), transparent 64%),
+    radial-gradient(48rem 36rem at 46% 112%, rgba(13, 125, 95, 0.045), transparent 62%);
+}
+
+/* ------------------------------ tipografia ------------------------------ */
+
+/* Título editorial: serifa com eixo óptico automático e o desenho "wonk"
+   ligado, que é o que dá o ar de revista impressa. */
+@utility titulo {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-variation-settings: 'SOFT' 20, 'WONK' 1;
+  letter-spacing: -0.022em;
+  line-height: 1.15;
+}
+
+/* Números tabulares: colunas de dinheiro que não dançam. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: -0.01em;
+}
+
+@utility rotulo-mini {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--texto-3);
+}
+
+/* ------------------------------ camadas ------------------------------ */
+
+@utility cartao {
+  background: color-mix(in srgb, var(--ink-800) 62%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--sombra);
+  backdrop-filter: blur(14px);
+}
+
+@utility vidro {
+  background: color-mix(in srgb, var(--ink-700) 78%, transparent);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+/* ------------------------------ scrollbar ------------------------------ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-forte);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--texto-3);
+  background-clip: content-box;
+}
+
+/* ------------------------------ foco ------------------------------ */
+
+:focus-visible {
+  outline: 2px solid var(--ouro);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ------------------------------ animações ------------------------------ */
+
+@keyframes fluxo {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Faixas do range com aparência consistente entre navegadores. */
+input[type='range'] {
+  appearance: none;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--surface-2);
+}
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  background: var(--ouro);
+  border: 2px solid var(--ink-800);
+  cursor: pointer;
+  box-shadow: 0 0 0 3px var(--ouro-fundo);
+}
