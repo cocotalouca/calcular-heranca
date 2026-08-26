@@ -15,7 +15,7 @@ interface Fatia {
 /**
  * O caminho do dinheiro, em duas barras.
  *
- * A primeira mostra como o acervo declarado vira herança: o que sai como
+ * A primeira mostra como o acervo apurado vira herança: o que sai como
  * meação, o que sai para pagar dívidas e o que sobra para partilhar. A
  * segunda parte a herança em legítima e disponível. É a pergunta que todo
  * mundo faz primeiro — "sobre quanto, afinal, se está discutindo?".
@@ -96,7 +96,7 @@ export function ResumoHeranca({ resultado }: { resultado: Resultado }) {
             {formatarCentavos(liquida)}
           </p>
           <p className="mt-1 text-[12.5px] text-[var(--texto-3)]">
-            de um acervo declarado de{' '}
+            de um acervo de{' '}
             <span className="num font-semibold text-[var(--texto-2)]">
               {formatarCentavos(acervo)}
             </span>

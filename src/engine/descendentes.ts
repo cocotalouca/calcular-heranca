@@ -1,6 +1,7 @@
 import { Fracao, F } from '@/lib/fracao'
 import {
   SITUACOES_COM_REPRESENTACAO,
+  herda,
   type Pessoa,
 } from './tipos'
 
@@ -47,6 +48,13 @@ export interface ColetaDescendentes {
  * Devolve `null` quando a estirpe está extinta: ou porque o herdeiro renunciou
  * (art. 1.811 — não se representa renunciante), ou porque faleceu sem deixar
  * quem o representasse.
+ *
+ * Atenção ao pós-morto: quem sobreviveu ao autor da herança e só depois morreu
+ * HERDOU. Ele figura aqui como herdeiro comum — o que muda é o destino do
+ * quinhão, que segue para o inventário dele, e não para os filhos por
+ * representação. Confundir os dois casos é o erro clássico do inventário
+ * cumulativo: o resultado difere sempre que o pós-morto tinha cônjuge, ou
+ * filhos em número diferente dos irmãos.
  */
 function resolverEstirpe(
   pessoa: Pessoa,
@@ -54,7 +62,7 @@ function resolverEstirpe(
   descartados: { nome: string; motivo: string }[],
   representadoPor?: string,
 ): MembroEstirpe[] | null {
-  if (pessoa.situacao === 'vivo') {
+  if (herda(pessoa.situacao)) {
     return [
       {
         pessoa,

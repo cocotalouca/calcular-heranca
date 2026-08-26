@@ -1,13 +1,6 @@
-import type { Caso, Pessoa, Quota, Resultado, Situacao } from '@/engine/tipos'
+import type { Caso, Papel, Pessoa, Quota, Resultado, Situacao } from '@/engine/tipos'
 
-export type Papel =
-  | 'falecido'
-  | 'conjuge'
-  | 'descendente'
-  | 'ascendente'
-  | 'colateral'
-  | 'legado'
-  | 'municipio'
+export type { Papel }
 
 export interface NoVis {
   id: string
@@ -20,6 +13,8 @@ export interface NoVis {
   y: number
   quota?: Quota
   herdeiro: boolean
+  /** Esta pessoa também é autora de herança no processo — há elo com outro óbito. */
+  obitoLigado?: string
 }
 
 export interface ArestaVis {
@@ -80,6 +75,7 @@ export function montarGrafo(caso: Caso, resultado: Resultado): Grafo {
       y: nivel,
       quota: q,
       herdeiro: !!q,
+      obitoLigado: p.obitoId,
     })
     posicao.set(p.id, { x, y: nivel })
     return x
@@ -117,9 +113,10 @@ export function montarGrafo(caso: Caso, resultado: Resultado): Grafo {
   posicao.set('__falecido', { x: xFalecido, y: 0 })
 
   if (temConjuge) {
-    const q = porId.get('conjuge')
+    const idConjuge = caso.conjuge.id || 'conjuge'
+    const q = porId.get(idConjuge)
     nos.push({
-      id: 'conjuge',
+      id: idConjuge,
       nome: caso.conjuge.nome || (caso.conjuge.vinculo === 'uniao_estavel' ? 'Companheiro(a)' : 'Cônjuge'),
       papel: 'conjuge',
       qualificacao:
@@ -130,8 +127,9 @@ export function montarGrafo(caso: Caso, resultado: Resultado): Grafo {
       y: 0,
       quota: q,
       herdeiro: !!q,
+      obitoLigado: caso.conjuge.obitoId,
     })
-    posicao.set('conjuge', { x: xConjuge, y: 0 })
+    posicao.set(idConjuge, { x: xConjuge, y: 0 })
     arestas.push({
       id: 'uniao',
       de: { x: xFalecido, y: 0 },
@@ -194,6 +192,7 @@ export function montarGrafo(caso: Caso, resultado: Resultado): Grafo {
           y,
           quota: q,
           herdeiro: !!q,
+          obitoLigado: eloAscendente(caso, id),
         })
         arestas.push({
           id: `a-${id}`,
@@ -241,6 +240,7 @@ export function montarGrafo(caso: Caso, resultado: Resultado): Grafo {
         y: 0,
         quota: q,
         herdeiro: !!q,
+        obitoLigado: irmao.obitoId,
       })
       // Irmãos não descendem do falecido: descendem dos mesmos pais. A linha
       // sobe até o ponto de junção acima dele, que é onde o parentesco nasce.
@@ -265,6 +265,7 @@ export function montarGrafo(caso: Caso, resultado: Resultado): Grafo {
           y: 1,
           quota: qs,
           herdeiro: !!qs,
+          obitoLigado: s.obitoId,
         })
         arestas.push({
           id: `cs-${s.id}`,
@@ -398,12 +399,11 @@ function rotuloGeracao(nivel: number): string {
   return ['', 'Filho(a)', 'Neto(a)', 'Bisneto(a)', 'Trineto(a)'][nivel] ?? `${nivel}º grau`
 }
 
-export const COR_PAPEL: Record<Papel, string> = {
-  falecido: 'var(--ouro)',
-  conjuge: 'var(--c-conjuge)',
-  descendente: 'var(--c-descendente)',
-  ascendente: 'var(--c-ascendente)',
-  colateral: 'var(--c-colateral)',
-  legado: 'var(--c-legado)',
-  municipio: 'var(--c-meacao)',
+export { COR_PAPEL } from '@/components/resultado/cores'
+
+/** Pai e mae de 1o grau podem ser, eles proprios, autores de heranca no processo. */
+function eloAscendente(caso: Caso, id: string): string | undefined {
+  if (id === 'asc-1-paterna-0') return caso.ascendentes.obitoPaiId
+  if (id === 'asc-1-materna-0') return caso.ascendentes.obitoMaeId
+  return undefined
 }

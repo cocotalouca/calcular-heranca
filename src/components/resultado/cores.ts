@@ -1,22 +1,23 @@
-import type { Quota } from '@/engine/tipos'
+import type { Papel, Quota } from '@/engine/tipos'
+
+const COR: Record<Papel, string> = {
+  falecido: 'var(--ouro)',
+  conjuge: 'var(--c-conjuge)',
+  descendente: 'var(--c-descendente)',
+  ascendente: 'var(--c-ascendente)',
+  colateral: 'var(--c-colateral)',
+  legado: 'var(--c-legado)',
+  municipio: 'var(--c-meacao)',
+}
+
+export function corDoPapel(papel: Papel): string {
+  return COR[papel] ?? 'var(--c-descendente)'
+}
 
 /** Cor da classe a que o herdeiro pertence — a mesma da árvore e dos gráficos. */
 export function corDaQuota(q: Quota): string {
-  if (q.id === 'conjuge') return 'var(--c-conjuge)'
-  if (q.tipo === 'legado') return 'var(--c-legado)'
-  if (q.id === 'municipio') return 'var(--c-meacao)'
-  if (q.id.startsWith('asc-') || (q.nivel ?? 0) < 0) return 'var(--c-ascendente)'
-
-  const t = q.qualificacao.toLowerCase()
-  if (
-    t.includes('irmã') ||
-    t.includes('irmão') ||
-    t.includes('sobrinh') ||
-    t.includes('tio') ||
-    t.includes('primo') ||
-    t.includes('colateral')
-  ) {
-    return 'var(--c-colateral)'
-  }
-  return 'var(--c-descendente)'
+  return corDoPapel(q.papel)
 }
+
+/** Mesmo mapa, para quem desenha por papel em vez de por quota. */
+export const COR_PAPEL = COR

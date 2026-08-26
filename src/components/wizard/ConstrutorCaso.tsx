@@ -1,7 +1,19 @@
 import { useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCaso } from '@/store/caso'
-import { REGIMES, type Irmao, type Regime, type Situacao } from '@/engine/tipos'
+import {
+  useInventario,
+  useNomeDoObito,
+  useObitoAtivo,
+  useResultadoAtivo,
+} from '@/store/inventario'
+import {
+  REGIMES,
+  type Ascendentes,
+  type Irmao,
+  type Pessoa,
+  type Regime,
+  type Situacao,
+} from '@/engine/tipos'
 import {
   Botao,
   CampoTexto,
@@ -14,26 +26,43 @@ import {
   Selo,
 } from '@/components/ui/primitivos'
 import {
+  IconeAmpulheta,
   IconeAscendentes,
   IconeBalanca,
   IconeChevron,
   IconeColaterais,
   IconeConjuge,
   IconeDescendentes,
+  IconeElo,
   IconeFechar,
   IconeMais,
   IconePatrimonio,
   IconeTestamento,
 } from '@/components/ui/icones'
-import { criarPessoa, encontrar, nomeSugerido, nomesEmUso, novoId, remover } from '@/lib/arvore'
-import {
-  EditorPessoas,
-  ROTULO_COLATERAL,
-  ROTULO_DESCENDENTE,
-} from './EditorPessoas'
+import { criarPessoa, encontrarNoObito, nomeSugerido, nomesEmUso, novoId, remover } from '@/lib/arvore'
+import { EditorPessoas, ROTULO_COLATERAL, ROTULO_DESCENDENTE } from './EditorPessoas'
+
+const SITUACOES_CONJUGE: { valor: Situacao; rotulo: string }[] = [
+  { valor: 'vivo', rotulo: 'Sobreviveu ao falecido' },
+  { valor: 'pos_morto', rotulo: 'Sobreviveu e faleceu depois' },
+  { valor: 'renunciante', rotulo: 'Renunciou à herança' },
+  { valor: 'pre_morto', rotulo: 'Já era falecido(a)' },
+  { valor: 'comoriente', rotulo: 'Morreu junto (comoriência)' },
+  { valor: 'indigno', rotulo: 'Excluído por indignidade' },
+]
 
 export function ConstrutorCaso() {
-  const { caso, resultado, atualizar } = useCaso()
+  const caso = useObitoAtivo()
+  const etapa = useResultadoAtivo()
+  const nomeDoObito = useNomeDoObito()
+  const {
+    atualizar,
+    criarObitoDePessoa,
+    criarObitoDoConjuge,
+    criarObitoDoAscendente,
+    desligarObito,
+  } = useInventario()
+
   const [abertas, setAbertas] = useState<Record<string, boolean>>({
     familia: true,
     descendentes: true,
@@ -43,13 +72,14 @@ export function ConstrutorCaso() {
   const alternar = (id: string) => setAbertas((a) => ({ ...a, [id]: !a[id] }))
 
   const temDescendentes = caso.descendentes.length > 0
-  const classeAtiva = resultado.classe
+  const classeAtiva = etapa?.resultado.classe
+  const aportes = etapa?.aportes ?? []
 
   /* ------------------------- mutações de pessoas ------------------------- */
 
-  const alterarPessoa = (id: string, mut: (p: import('@/engine/tipos').Pessoa) => void) =>
+  const alterarPessoa = (id: string, mut: (p: Pessoa) => void) =>
     atualizar((c) => {
-      const p = encontrar(c.descendentes, id) ?? encontrar(c.colaterais.irmaos, id)
+      const p = encontrarNoObito(c, id)
       if (p) mut(p)
     })
 
@@ -60,13 +90,40 @@ export function ConstrutorCaso() {
 
   const adicionarFilhoDe = (id: string) =>
     atualizar((c) => {
-      const p = encontrar(c.descendentes, id) ?? encontrar(c.colaterais.irmaos, id)
+      const p = encontrarNoObito(c, id)
       if (!p) return
       p.filhos.push(criarPessoa(nomeSugerido(nomesEmUso(c.descendentes)), false))
     })
 
   return (
     <div className="space-y-2">
+      {/* =================== o que veio de outra sucessão =================== */}
+      {aportes.length > 0 && (
+        <div className="rounded-2xl border border-[color-mix(in_srgb,var(--c-conjuge)_30%,transparent)] bg-[color-mix(in_srgb,var(--c-conjuge)_8%,transparent)] p-3.5">
+          <p className="flex items-center gap-1.5 text-[12.5px] font-bold text-[var(--c-conjuge)]">
+            <IconeElo tamanho={14} />
+            Acervo herdado de outra sucessão
+          </p>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--texto-2)]">
+            Este falecido sobreviveu à abertura da sucessão anterior e adquiriu ali o quinhão
+            que lhe cabia. O valor já entra somado ao acervo abaixo — não digite de novo.
+          </p>
+          <ul className="mt-2 space-y-1">
+            {aportes.map((a, i) => (
+              <li key={i} className="flex items-center justify-between gap-2 text-[12px]">
+                <span className="min-w-0 truncate text-[var(--texto-3)]">
+                  de {a.origemNome} · {a.tipo === 'meacao' ? 'meação' : 'herança'} ·{' '}
+                  {a.destino === 'comum' ? 'bem comum' : 'bem particular'}
+                </span>
+                <span className="num shrink-0 font-bold text-[var(--c-conjuge)]">
+                  {formatarBRL(a.centavos)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ============================ família ============================ */}
       <Secao
         id="familia"
@@ -75,26 +132,46 @@ export function ConstrutorCaso() {
         icone={<IconeConjuge tamanho={17} />}
         aberta={abertas.familia}
         onToggle={alternar}
-        resumo={
-          caso.conjuge.existe
-            ? REGIMES[caso.conjuge.regime].curto
-            : 'sem cônjuge'
-        }
+        resumo={caso.conjuge.existe ? REGIMES[caso.conjuge.regime].curto : 'sem cônjuge'}
       >
         <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Rotulo>Nome do autor da herança</Rotulo>
+              <CampoTexto
+                valor={caso.nomeFalecido}
+                onChange={(v) => atualizar((c) => void (c.nomeFalecido = v))}
+                placeholder="Nome de quem faleceu"
+              />
+            </div>
+            <div>
+              <Rotulo dica="A data decide quem herdou de quem. Num inventário cumulativo, quem faleceu depois pode ter recebido do anterior — e transmitido o que recebeu.">
+                Data do óbito
+              </Rotulo>
+              <input
+                type="date"
+                value={caso.dataObito ?? ''}
+                onChange={(e) => atualizar((c) => void (c.dataObito = e.target.value))}
+                className="num w-full cursor-pointer rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-[14px] text-[var(--texto)] transition hover:border-[var(--border-forte)] focus:border-[var(--ouro)] focus:outline-none"
+              />
+            </div>
+          </div>
+
           <div>
-            <Rotulo>Nome do autor da herança</Rotulo>
+            <Rotulo dica="Texto livre para identificar esta sucessão no relatório — “esposa de Fulano”, “filho falecido no curso do inventário”.">
+              Como esta pessoa se liga às demais
+            </Rotulo>
             <CampoTexto
-              valor={caso.nomeFalecido}
-              onChange={(v) => atualizar((c) => void (c.nomeFalecido = v))}
-              placeholder="Ex.: João da Silva"
+              valor={caso.parentesco ?? ''}
+              onChange={(v) => atualizar((c) => void (c.parentesco = v))}
+              placeholder="Opcional. Ex.: cônjuge do primeiro falecido"
             />
           </div>
 
           <Interruptor
             ligado={caso.conjuge.existe}
             onChange={(v) => atualizar((c) => void (c.conjuge.existe = v))}
-            rotulo="Havia cônjuge ou companheiro(a) sobrevivente"
+            rotulo="Havia cônjuge ou companheiro(a)"
             descricao="Casamento e união estável recebem o mesmo tratamento desde o julgamento do STF."
           />
 
@@ -112,7 +189,7 @@ export function ConstrutorCaso() {
                     <CampoTexto
                       valor={caso.conjuge.nome}
                       onChange={(v) => atualizar((c) => void (c.conjuge.nome = v))}
-                      placeholder="Ex.: Maria"
+                      placeholder="Nome do cônjuge"
                     />
                   </div>
                   <div>
@@ -140,10 +217,7 @@ export function ConstrutorCaso() {
                         if (v !== 'separacao_obrigatoria') c.conjuge.sumula377 = false
                       })
                     }
-                    opcoes={Object.values(REGIMES).map((r) => ({
-                      valor: r.id,
-                      rotulo: r.nome,
-                    }))}
+                    opcoes={Object.values(REGIMES).map((r) => ({ valor: r.id, rotulo: r.nome }))}
                   />
                   <p className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[12px] leading-relaxed text-[var(--texto-2)]">
                     {REGIMES[caso.conjuge.regime].resumo}
@@ -151,19 +225,28 @@ export function ConstrutorCaso() {
                 </div>
 
                 <div>
-                  <Rotulo>Situação do cônjuge</Rotulo>
+                  <Rotulo dica="“Sobreviveu e faleceu depois” abre um segundo inventário: o cônjuge herdou de verdade, e o que recebeu passa aos herdeiros dele.">
+                    Situação do cônjuge
+                  </Rotulo>
                   <Selecao<Situacao>
                     valor={caso.conjuge.situacao}
                     onChange={(v) => atualizar((c) => void (c.conjuge.situacao = v))}
-                    opcoes={[
-                      { valor: 'vivo', rotulo: 'Sobreviveu ao falecido' },
-                      { valor: 'renunciante', rotulo: 'Renunciou à herança' },
-                      { valor: 'pre_morto', rotulo: 'Já era falecido(a)' },
-                      { valor: 'comoriente', rotulo: 'Morreu junto (comoriência)' },
-                      { valor: 'indigno', rotulo: 'Excluído por indignidade' },
-                    ]}
+                    opcoes={SITUACOES_CONJUGE}
                   />
                 </div>
+
+                <EloOuBotao
+                  ligadoA={caso.conjuge.obitoId ? nomeDoObito(caso.conjuge.obitoId) : undefined}
+                  mostrarBotao={caso.conjuge.situacao !== 'vivo'}
+                  rotuloBotao={`Abrir o inventário de ${caso.conjuge.nome || 'cônjuge'}`}
+                  onCriar={() => criarObitoDoConjuge(caso.id)}
+                  onDesligar={() => desligarObito(caso.id, caso.conjuge.id)}
+                  explicacao={
+                    caso.conjuge.situacao === 'pos_morto'
+                      ? 'A meação e a herança que couberem ao cônjuge seguem para o inventário dele.'
+                      : 'A sucessão do cônjuge é partilhada no próprio inventário dele.'
+                  }
+                />
 
                 {caso.conjuge.regime === 'separacao_obrigatoria' && (
                   <Interruptor
@@ -199,8 +282,9 @@ export function ConstrutorCaso() {
       >
         <div className="space-y-3">
           <p className="text-[12.5px] leading-relaxed text-[var(--texto-3)]">
-            Comece pelos filhos. Marque alguém como falecido antes do autor da herança para que
-            os netos entrem por representação.
+            Comece pelos filhos. Quem faleceu <strong>antes</strong> é representado pelos
+            próprios descendentes; quem faleceu <strong>depois</strong> herdou, e o quinhão dele
+            é partilhado num inventário próprio, cumulado a este.
           </p>
 
           <EditorPessoas
@@ -211,6 +295,9 @@ export function ConstrutorCaso() {
             onAlterar={alterarPessoa}
             onRemover={removerPessoa}
             onAdicionarFilho={adicionarFilhoDe}
+            onAbrirInventario={(id) => criarObitoDePessoa(caso.id, id)}
+            onDesligar={(id) => desligarObito(caso.id, id)}
+            nomeDoObito={nomeDoObito}
           />
 
           <Botao
@@ -243,16 +330,30 @@ export function ConstrutorCaso() {
         avisoInerte="Havendo descendentes, os ascendentes não são chamados."
       >
         <div className="space-y-2.5">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Interruptor
-              ligado={caso.ascendentes.pai}
-              onChange={(v) => atualizar((c) => void (c.ascendentes.pai = v))}
+          <div className="space-y-2">
+            <LinhaAscendente
               rotulo="Pai vivo"
+              ligado={caso.ascendentes.pai}
+              nome={caso.ascendentes.nomePai ?? ''}
+              obitoLigado={
+                caso.ascendentes.obitoPaiId ? nomeDoObito(caso.ascendentes.obitoPaiId) : undefined
+              }
+              onLigar={(v) => atualizar((c) => void (c.ascendentes.pai = v))}
+              onNome={(v) => atualizar((c) => void (c.ascendentes.nomePai = v))}
+              onCriarInventario={() => criarObitoDoAscendente(caso.id, 'pai')}
+              onDesligar={() => desligarObito(caso.id, 'asc-1-paterna-0')}
             />
-            <Interruptor
-              ligado={caso.ascendentes.mae}
-              onChange={(v) => atualizar((c) => void (c.ascendentes.mae = v))}
+            <LinhaAscendente
               rotulo="Mãe viva"
+              ligado={caso.ascendentes.mae}
+              nome={caso.ascendentes.nomeMae ?? ''}
+              obitoLigado={
+                caso.ascendentes.obitoMaeId ? nomeDoObito(caso.ascendentes.obitoMaeId) : undefined
+              }
+              onLigar={(v) => atualizar((c) => void (c.ascendentes.mae = v))}
+              onNome={(v) => atualizar((c) => void (c.ascendentes.nomeMae = v))}
+              onCriarInventario={() => criarObitoDoAscendente(caso.id, 'mae')}
+              onDesligar={() => desligarObito(caso.id, 'asc-1-materna-0')}
             />
           </div>
 
@@ -331,7 +432,7 @@ export function ConstrutorCaso() {
                         c.colaterais.irmaos = c.colaterais.irmaos.filter((x) => x.id !== irmao.id)
                       })
                     }
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--texto-3)] transition hover:bg-[color-mix(in_srgb,var(--perigo)_14%,transparent)] hover:bg-[color-mix(in_srgb,var(--perigo)_13%,transparent)] hover:text-[var(--perigo)]"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--texto-3)] transition hover:bg-[color-mix(in_srgb,var(--perigo)_13%,transparent)] hover:text-[var(--perigo)]"
                   >
                     <IconeFechar tamanho={14} />
                   </button>
@@ -362,6 +463,7 @@ export function ConstrutorCaso() {
                     opcoes={[
                       { valor: 'vivo', rotulo: 'Vivo(a)' },
                       { valor: 'pre_morto', rotulo: 'Faleceu antes' },
+                      { valor: 'pos_morto', rotulo: 'Faleceu depois' },
                       { valor: 'renunciante', rotulo: 'Renunciou' },
                     ]}
                   />
@@ -381,22 +483,39 @@ export function ConstrutorCaso() {
                     onAlterar={alterarPessoa}
                     onRemover={removerPessoa}
                     onAdicionarFilho={adicionarFilhoDe}
+                    nomeDoObito={nomeDoObito}
                   />
                 )}
 
-                <Botao
-                  tamanho="sm"
-                  variante="fantasma"
-                  className="mt-2"
-                  onClick={() =>
-                    atualizar((c) => {
-                      const i = c.colaterais.irmaos.find((x) => x.id === irmao.id)
-                      if (i) i.filhos.push(criarPessoa(nomeSugerido(nomesEmUso(i.filhos)), false))
-                    })
-                  }
-                >
-                  <IconeMais tamanho={13} /> sobrinho(a)
-                </Botao>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Botao
+                    tamanho="sm"
+                    variante="fantasma"
+                    onClick={() =>
+                      atualizar((c) => {
+                        const i = c.colaterais.irmaos.find((x) => x.id === irmao.id)
+                        if (i) i.filhos.push(criarPessoa(nomeSugerido(nomesEmUso(i.filhos)), false))
+                      })
+                    }
+                  >
+                    <IconeMais tamanho={13} /> sobrinho(a)
+                  </Botao>
+
+                  {irmao.situacao !== 'vivo' && !irmao.obitoId && (
+                    <Botao
+                      tamanho="sm"
+                      variante="fantasma"
+                      onClick={() => criarObitoDePessoa(caso.id, irmao.id)}
+                    >
+                      <IconeAmpulheta tamanho={13} /> abrir o inventário dele(a)
+                    </Botao>
+                  )}
+                  {irmao.obitoId && (
+                    <Selo cor="var(--c-conjuge)">
+                      sucessão cadastrada: {nomeDoObito(irmao.obitoId)}
+                    </Selo>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -476,6 +595,12 @@ export function ConstrutorCaso() {
               valor={caso.patrimonio.bensParticulares}
               onChange={(v) => atualizar((c) => void (c.patrimonio.bensParticulares = v))}
             />
+            {aportes.length > 0 && (
+              <p className="mt-1.5 text-[11.5px] leading-snug text-[var(--c-conjuge)]">
+                Informe apenas os bens próprios: o que veio da sucessão anterior já é somado
+                automaticamente.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -646,7 +771,7 @@ export function ConstrutorCaso() {
                             onChange={(v) =>
                               atualizar((c) => {
                                 const x = c.patrimonio.doacoes.find((y) => y.id === d.id)
-                                const alvo = encontrar(c.descendentes, v)
+                                const alvo = encontrarNoObito(c, v)
                                 if (x) {
                                   x.donatarioId = v
                                   x.nomeDonatario = alvo?.nome ?? ''
@@ -741,23 +866,117 @@ export function ConstrutorCaso() {
           </p>
           <Interruptor
             ligado={caso.opcoes.concorrenciaSoBensParticulares}
-            onChange={(v) =>
-              atualizar((c) => void (c.opcoes.concorrenciaSoBensParticulares = v))
-            }
+            onChange={(v) => atualizar((c) => void (c.opcoes.concorrenciaSoBensParticulares = v))}
             rotulo="Concorrência apenas sobre os bens particulares"
             descricao="Tese fixada pela 2ª Seção do STJ no REsp 1.368.123/SP. Desligando, o cônjuge concorre sobre toda a herança."
           />
           <Interruptor
             ligado={caso.opcoes.reservaQuartoFiliacaoHibrida}
-            onChange={(v) =>
-              atualizar((c) => void (c.opcoes.reservaQuartoFiliacaoHibrida = v))
-            }
+            onChange={(v) => atualizar((c) => void (c.opcoes.reservaQuartoFiliacaoHibrida = v))}
             rotulo="Reservar 1/4 ao cônjuge na filiação híbrida"
             descricao="O Enunciado 527 do CJF diz que não se reserva. Ligue para adotar a corrente contrária."
           />
         </div>
       </Secao>
+    </div>
+  )
+}
 
+/* --------------------- elo com outro inventário --------------------- */
+
+function EloOuBotao({
+  ligadoA,
+  mostrarBotao,
+  rotuloBotao,
+  explicacao,
+  onCriar,
+  onDesligar,
+}: {
+  ligadoA?: string
+  mostrarBotao: boolean
+  rotuloBotao: string
+  explicacao: string
+  onCriar: () => void
+  onDesligar: () => void
+}) {
+  if (ligadoA) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[color-mix(in_srgb,var(--c-conjuge)_28%,transparent)] bg-[color-mix(in_srgb,var(--c-conjuge)_8%,transparent)] px-3 py-2">
+        <span className="text-[var(--c-conjuge)]">
+          <IconeElo tamanho={14} />
+        </span>
+        <span className="min-w-0 flex-1 text-[12px] leading-snug text-[var(--texto-2)]">
+          Ligado à sucessão de <strong>{ligadoA}</strong>. {explicacao}
+        </span>
+        <button
+          onClick={onDesligar}
+          className="text-[11px] font-semibold text-[var(--texto-3)] transition hover:text-[var(--perigo)]"
+        >
+          desfazer elo
+        </button>
+      </div>
+    )
+  }
+
+  if (!mostrarBotao) return null
+
+  return (
+    <Botao variante="contorno" className="w-full" onClick={onCriar}>
+      <IconeAmpulheta tamanho={14} /> {rotuloBotao}
+    </Botao>
+  )
+}
+
+/* ------------------------- pai e mãe, um a um ------------------------- */
+
+function LinhaAscendente({
+  rotulo,
+  ligado,
+  nome,
+  obitoLigado,
+  onLigar,
+  onNome,
+  onCriarInventario,
+  onDesligar,
+}: {
+  rotulo: string
+  ligado: boolean
+  nome: string
+  obitoLigado?: string
+  onLigar: (v: boolean) => void
+  onNome: (v: string) => void
+  onCriarInventario: () => void
+  onDesligar: () => void
+}) {
+  return (
+    <div
+      className="rounded-xl border p-2.5"
+      style={{
+        borderColor: obitoLigado
+          ? 'color-mix(in srgb, var(--c-conjuge) 32%, transparent)'
+          : 'var(--border)',
+        background: 'var(--surface)',
+      }}
+    >
+      <Interruptor ligado={ligado} onChange={onLigar} rotulo={rotulo} />
+      {ligado && (
+        <div className="mt-2 space-y-2">
+          <CampoTexto
+            valor={nome}
+            onChange={onNome}
+            placeholder={`Nome (opcional) — aparece no relatório`}
+            className="!py-1.5 !text-[13px]"
+          />
+          <EloOuBotao
+            ligadoA={obitoLigado}
+            mostrarBotao
+            rotuloBotao="Este ascendente também faleceu — abrir o inventário dele(a)"
+            explicacao="O que este ascendente herdar aqui é partilhado na sucessão dele."
+            onCriar={onCriarInventario}
+            onDesligar={onDesligar}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -801,9 +1020,7 @@ function Secao({
     <div
       className="overflow-hidden rounded-2xl border transition-colors"
       style={{
-        borderColor: ativa
-          ? 'color-mix(in srgb, var(--ouro) 34%, transparent)'
-          : 'var(--border)',
+        borderColor: ativa ? 'color-mix(in srgb, var(--ouro) 34%, transparent)' : 'var(--border)',
         background: 'var(--surface)',
       }}
     >
@@ -873,7 +1090,7 @@ function Secao({
   )
 }
 
-function resumoAscendentes(a: import('@/engine/tipos').Ascendentes): string {
+function resumoAscendentes(a: Ascendentes): string {
   const partes: string[] = []
   if (a.pai) partes.push('pai')
   if (a.mae) partes.push('mãe')
@@ -882,4 +1099,10 @@ function resumoAscendentes(a: import('@/engine/tipos').Ascendentes): string {
   const bis = a.bisavosPaternos + a.bisavosMaternos
   if (bis) partes.push(`${bis} bisavó(s)`)
   return partes.length > 0 ? partes.join(' · ') : 'nenhum'
+}
+
+function formatarBRL(centavos: bigint): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+    Number(centavos) / 100,
+  )
 }

@@ -181,3 +181,77 @@ export const IconeEnquadrar = (p: Props) => (
     <path d="M4 9V5.6A1.6 1.6 0 0 1 5.6 4H9M15 4h3.4A1.6 1.6 0 0 1 20 5.6V9M20 15v3.4a1.6 1.6 0 0 1-1.6 1.6H15M9 20H5.6A1.6 1.6 0 0 1 4 18.4V15" />
   </Svg>
 )
+
+/* --------------------------- inventário cumulativo --------------------------- */
+
+/** Lápide simplificada — um óbito no processo. */
+export const IconeObito = (p: Props) => (
+  <Svg {...p}>
+    <path d="M6 21V9a6 6 0 0 1 12 0v12" />
+    <path d="M4 21h16" />
+    <path d="M12 8v6M9.6 10.4h4.8" />
+  </Svg>
+)
+
+/** Elos de corrente — o vínculo entre duas sucessões. */
+export const IconeElo = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9.5 13.5a4 4 0 0 1 0-5.66l2.12-2.12a4 4 0 0 1 5.66 5.66l-1.06 1.06" />
+    <path d="M14.5 10.5a4 4 0 0 1 0 5.66l-2.12 2.12a4 4 0 0 1-5.66-5.66l1.06-1.06" />
+  </Svg>
+)
+
+/** Ampulheta — o herdeiro que faleceu no curso do inventário. */
+export const IconeAmpulheta = (p: Props) => (
+  <Svg {...p}>
+    <path d="M7 3h10M7 21h10" />
+    <path d="M8 3v3.5c0 2 4 3.6 4 5.5s-4 3.5-4 5.5V21" />
+    <path d="M16 3v3.5c0 2-4 3.6-4 5.5s4 3.5 4 5.5V21" />
+  </Svg>
+)
+
+/** Grade de planilha. */
+export const IconePlanilha = (p: Props) => (
+  <Svg {...p}>
+    <rect x="3" y="3.5" width="18" height="17" rx="2.5" />
+    <path d="M3 9h18M3 15h18M9.5 9v11.5" />
+  </Svg>
+)
+
+/** Folha impressa — exportação em PDF. */
+export const IconeDocumento = (p: Props) => (
+  <Svg {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+    <path d="M8.5 13h7M8.5 16.5h4.5" />
+  </Svg>
+)
+
+export const IconeSetaCima = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </Svg>
+)
+
+export const IconeSetaBaixo = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 5v14M18 13l-6 6-6-6" />
+  </Svg>
+)
+
+/** Calendário — datas de óbito e ordenação cronológica. */
+export const IconeCalendario = (p: Props) => (
+  <Svg {...p}>
+    <rect x="3.5" y="5" width="17" height="16" rx="2.5" />
+    <path d="M3.5 10h17M8 3v4M16 3v4" />
+  </Svg>
+)
+
+/** Alvo — o destino final dos bens. */
+export const IconeAlvo = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="4.5" />
+    <circle cx="12" cy="12" r="1" />
+  </Svg>
+)

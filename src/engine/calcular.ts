@@ -8,7 +8,9 @@ import {
   type Alerta,
   type Caso,
   type Classe,
+  type Papel,
   type Passo,
+  type Pessoa,
   type Quota,
   type Resultado,
 } from './tipos'
@@ -18,12 +20,48 @@ interface Parte {
   id: string
   nome: string
   qualificacao: string
+  papel: Papel
   fracao: Fracao
   fundamento: string[]
   representando?: string
   observacao?: string
   nivel?: number
   ehConjuge?: boolean
+}
+
+/**
+ * Onde cada herdeiro que também faleceu continua a história.
+ *
+ * Guardamos duas coisas por id: o inventário para o qual o quinhão segue
+ * (`obitoId`) e o fato de a pessoa ser pós-morta. Um pós-morto sem inventário
+ * cadastrado não some do cálculo — recebe normalmente e ganha um aviso de
+ * transmissão pendente, porque o quinhão dele existe e precisa ser inventariado.
+ */
+interface Elos {
+  destino: Map<string, string>
+  posMortos: Set<string>
+}
+
+function mapearElos(caso: Caso): Elos {
+  const destino = new Map<string, string>()
+  const posMortos = new Set<string>()
+
+  const visitar = (p: Pessoa) => {
+    if (p.obitoId) destino.set(p.id, p.obitoId)
+    if (p.situacao === 'pos_morto') posMortos.add(p.id)
+    p.filhos.forEach(visitar)
+  }
+  caso.descendentes.forEach(visitar)
+  caso.colaterais.irmaos.forEach(visitar)
+
+  if (caso.conjuge.existe) {
+    if (caso.conjuge.obitoId) destino.set(caso.conjuge.id, caso.conjuge.obitoId)
+    if (caso.conjuge.situacao === 'pos_morto') posMortos.add(caso.conjuge.id)
+  }
+  if (caso.ascendentes.obitoPaiId) destino.set('asc-1-paterna-0', caso.ascendentes.obitoPaiId)
+  if (caso.ascendentes.obitoMaeId) destino.set('asc-1-materna-0', caso.ascendentes.obitoMaeId)
+
+  return { destino, posMortos }
 }
 
 /* ================================================================== *
@@ -34,6 +72,8 @@ export function calcular(caso: Caso): Resultado {
   const passos: Passo[] = []
   const alertas: Alerta[] = []
   const info = REGIMES[caso.conjuge.regime]
+  const elos = mapearElos(caso)
+  const idConjuge = caso.conjuge.id || 'conjuge'
 
   /* ---------- 1. Quem é o cônjuge, afinal ---------- */
 
@@ -44,7 +84,7 @@ export function calcular(caso: Caso): Resultado {
 
   const conjugeHerdeiro =
     conjugeSobrevive &&
-    caso.conjuge.situacao === 'vivo' &&
+    (caso.conjuge.situacao === 'vivo' || caso.conjuge.situacao === 'pos_morto') &&
     !caso.conjuge.separadoDeFato
 
   if (caso.conjuge.existe && caso.conjuge.separadoDeFato) {
@@ -180,9 +220,10 @@ export function calcular(caso: Caso): Resultado {
     classeLabel = 'Cônjuge/companheiro sobrevivente'
     partesParticular = [
       {
-        id: 'conjuge',
+        id: idConjuge,
         nome: caso.conjuge.nome || 'Cônjuge sobrevivente',
         qualificacao: rotuloConjuge(caso),
+        papel: 'conjuge',
         fracao: Fracao.UM,
         fundamento: ['CC art. 1.838'],
         ehConjuge: true,
@@ -205,6 +246,7 @@ export function calcular(caso: Caso): Resultado {
         id: h.id,
         nome: h.nome,
         qualificacao: h.qualificacao,
+        papel: 'colateral' as const,
         fracao: h.fracao,
         fundamento: [coletaCol.fundamento],
         representando: h.representando,
@@ -310,6 +352,7 @@ export function calcular(caso: Caso): Resultado {
     id: p.id,
     nome: p.nome,
     qualificacao: p.qualificacao,
+    papel: p.papel,
     tipo: 'heranca' as const,
     fracaoHeranca: fracoesFinais[i],
     valorCentavos: valores[i],
@@ -324,6 +367,7 @@ export function calcular(caso: Caso): Resultado {
       id: l.id,
       nome: l.nome,
       qualificacao: 'Beneficiário de testamento',
+      papel: 'legado',
       tipo: 'legado',
       fracaoHeranca: l.fracao,
       valorCentavos: valores[legitimos.length + k],
@@ -342,6 +386,7 @@ export function calcular(caso: Caso): Resultado {
       id: 'municipio',
       nome: 'Município / Distrito Federal',
       qualificacao: 'Herança vacante',
+      papel: 'municipio',
       tipo: 'heranca',
       fracaoHeranca: Fracao.UM,
       valorCentavos: herancaLiquida,
@@ -356,22 +401,39 @@ export function calcular(caso: Caso): Resultado {
     })
   }
 
-  /* ---------- 9. Avisos gerais ---------- */
+  /* ---------- 9. Marcar o que segue para outro inventário ---------- */
 
-  reunirAlertasGerais(caso, classe, coletaDesc.descartados, alertas)
+  quotas = quotas.map((q) => {
+    const destinoObitoId = elos.destino.get(q.id)
+    const posMorto = elos.posMortos.has(q.id)
+    if (!destinoObitoId && !posMorto) return q
+    return {
+      ...q,
+      destinoObitoId,
+      transmissaoPendente: posMorto && !destinoObitoId,
+    }
+  })
+
+  /* ---------- 10. Avisos gerais ---------- */
+
+  reunirAlertasGerais(caso, classe, coletaDesc.descartados, elos, passos, alertas)
 
   const resumo = montarResumo(caso, classe, quotas)
 
   return {
+    obitoId: caso.id,
+    nomeFalecido: caso.nomeFalecido,
     classe,
     classeLabel,
     quotas: quotas.sort(ordenarQuotas),
     meacao:
       temMeacao && meacaoCentavos > 0n
         ? {
+            id: idConjuge,
             valorCentavos: meacaoCentavos,
             nome: caso.conjuge.nome || 'Cônjuge sobrevivente',
             explicacao: `Metade da massa comum (${formatarCentavos(comuns)}), destacada antes de qualquer partilha. Não é herança: é patrimônio próprio do sobrevivente, decorrente do regime de bens.`,
+            destinoObitoId: elos.destino.get(idConjuge),
           }
         : null,
     massa: {
@@ -515,9 +577,10 @@ function montarPartesDescendentes(
 
   if (incluirConjuge && quotaConjuge.ehPositiva()) {
     partes.push({
-      id: 'conjuge',
+      id: caso.conjuge.id || 'conjuge',
       nome: caso.conjuge.nome || 'Cônjuge sobrevivente',
       qualificacao: rotuloConjuge(caso),
+      papel: 'conjuge',
       fracao: quotaConjuge,
       fundamento: ['CC arts. 1.829, I e 1.832'],
       ehConjuge: true,
@@ -531,6 +594,7 @@ function montarPartesDescendentes(
         id: m.pessoa.id,
         nome: m.pessoa.nome,
         qualificacao: qualificarDescendente(m.nivel, m.representando !== undefined),
+        papel: 'descendente',
         fracao: porEstirpe.vezes(m.fracaoInterna),
         fundamento: m.representando
           ? ['CC arts. 1.833, 1.851 a 1.855']
@@ -573,9 +637,10 @@ function distribuirAscendentes(
     quotaConjuge = doisPaisVivos ? F(1, 3) : F(1, 2)
 
     partes.push({
-      id: 'conjuge',
+      id: caso.conjuge.id || 'conjuge',
       nome: caso.conjuge.nome || 'Cônjuge sobrevivente',
       qualificacao: rotuloConjuge(caso),
+      papel: 'conjuge',
       fracao: quotaConjuge,
       fundamento: ['CC arts. 1.829, II e 1.837'],
       ehConjuge: true,
@@ -602,6 +667,7 @@ function distribuirAscendentes(
       id: h.id,
       nome: h.nome,
       qualificacao: h.qualificacao,
+      papel: 'ascendente',
       fracao: paraAscendentes.vezes(h.fracao),
       fundamento: ['CC arts. 1.829, II e 1.836'],
       nivel: -h.grau,
@@ -803,10 +869,45 @@ function reunirAlertasGerais(
   caso: Caso,
   classe: Classe,
   descartados: { nome: string; motivo: string }[],
+  elos: Elos,
+  passos: Passo[],
   alertas: Alerta[],
 ) {
   for (const d of descartados) {
     alertas.push({ nivel: 'info', titulo: `${d.nome} não herda`, texto: d.motivo })
+  }
+
+  /* --- pós-morte de co-herdeiro: a diferença que decide o caso --- */
+
+  if (elos.posMortos.size > 0) {
+    const nomes = nomesPosMortos(caso)
+    passos.push({
+      titulo: 'Herdeiro que faleceu depois da abertura da sucessão',
+      texto: `${listar(nomes)} sobreviveu ao autor da herança. Ainda que por um instante, isso basta: a herança se transmitiu no exato momento da morte, independentemente de inventário ou de partilha. O quinhão foi adquirido e agora integra o espólio próprio — passa aos herdeiros dele, e não aos filhos por representação. Daí a cumulação de inventários.`,
+      fundamento: 'CC arts. 1.784 e 1.787; CPC art. 672, III',
+      destaque: 'chave',
+    })
+
+    alertas.push({
+      nivel: 'atencao',
+      titulo: 'Pré-morte e pós-morte produzem partilhas diferentes',
+      texto:
+        'Se o co-herdeiro tivesse morrido ANTES, nada teria herdado e os descendentes dele o representariam, dividindo entre si a quota do pai (art. 1.851). Como morreu DEPOIS, ele herdou: o quinhão entra no inventário dele e se reparte segundo a ordem de vocação da SUA sucessão — o que pode incluir o cônjuge dele, que nada receberia por representação. Verifique as datas nos documentos: a diferença de um dia muda quem recebe.',
+      fundamento: 'CC arts. 1.784, 1.851 e 1.854',
+    })
+  }
+
+  const pendentes = caso.descendentes
+    .concat(caso.colaterais.irmaos)
+    .filter((p) => p.situacao === 'pos_morto' && !p.obitoId)
+  if (pendentes.length > 0 || (caso.conjuge.situacao === 'pos_morto' && !caso.conjuge.obitoId)) {
+    alertas.push({
+      nivel: 'critico',
+      titulo: 'Falta cadastrar o inventário do herdeiro falecido',
+      texto:
+        'Há herdeiro marcado como falecido depois da abertura da sucessão sem que o inventário dele esteja cadastrado. O quinhão foi calculado, mas o destino final dele fica em aberto: acrescente o óbito ao processo para ver a quem o valor chega no fim.',
+      fundamento: 'CPC arts. 672 e 673',
+    })
   }
 
   if (caso.conjuge.existe && caso.conjuge.vinculo === 'uniao_estavel') {
@@ -854,9 +955,29 @@ function reunirAlertasGerais(
   })
 }
 
+function nomesPosMortos(caso: Caso): string[] {
+  const nomes: string[] = []
+  const visitar = (p: Pessoa) => {
+    if (p.situacao === 'pos_morto') nomes.push(p.nome || 'Um herdeiro')
+    p.filhos.forEach(visitar)
+  }
+  caso.descendentes.forEach(visitar)
+  caso.colaterais.irmaos.forEach(visitar)
+  if (caso.conjuge.existe && caso.conjuge.situacao === 'pos_morto') {
+    nomes.push(caso.conjuge.nome || 'O cônjuge')
+  }
+  return nomes
+}
+
 /* ================================================================== *
  * Auxiliares
  * ================================================================== */
+
+function listar(nomes: string[]): string {
+  if (nomes.length === 0) return 'Um herdeiro'
+  if (nomes.length === 1) return nomes[0]
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`
+}
 
 function rotuloConjuge(caso: Caso): string {
   const base = caso.conjuge.vinculo === 'uniao_estavel' ? 'Companheiro(a)' : 'Cônjuge'

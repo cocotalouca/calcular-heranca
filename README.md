@@ -1,7 +1,9 @@
 # Partilha Justa
 
 Calculadora de herança e partilha segundo o Código Civil brasileiro, com árvore
-genealógica interativa e fundamentação artigo por artigo.
+genealógica interativa, fundamentação artigo por artigo e **cumulação de
+inventários** — vários falecidos ligados entre si no mesmo processo, como manda
+o art. 672 do CPC.
 
 Roda inteiramente no navegador: nenhum dado sai da máquina do usuário, e o
 resultado é um site estático que se hospeda de graça no GitHub Pages, Vercel,
@@ -30,6 +32,23 @@ regras que realmente decidem os casos difíceis:
 | Testamento | Legítima intocável; deixas que a invadem são reduzidas proporcionalmente. |
 | Colação | Doação a descendente volta ao monte, a partilha se refaz e o donatário recebe descontado. Doação inoficiosa é sinalizada. |
 | Vacância | Herança jacente → vacante → Município (arts. 1.819–1.822 e 1.844). |
+| **Pós-morte do co-herdeiro** | Quem sobrevive ao autor da herança **herda** (art. 1.784), ainda que morra no dia seguinte. O quinhão entra no espólio dele e se reparte na sucessão dele — não vai aos filhos por representação. |
+| **Inventário cumulativo** | Vários óbitos em ordem cronológica no mesmo processo. O que um herdou é somado ao acervo do inventário seguinte, e o app aponta qual inciso do art. 672 do CPC autoriza a cumulação. |
+
+### Pré-morte e pós-morte não são a mesma coisa
+
+É o erro mais caro da prática, e a razão de esta calculadora existir na forma
+que tem. Um pai deixa R$ 900 mil e dois filhos; um deles morre depois, deixando
+viúva e um filho:
+
+| | Quem recebe |
+|---|---|
+| Filho morreu **antes** do pai | Neto representa e leva os R$ 450 mil sozinho. A viúva não recebe nada. |
+| Filho morreu **depois** do pai | O filho herdou. Os R$ 450 mil entram no espólio dele, onde a viúva concorre com o neto: R$ 225 mil para cada. |
+
+Um dia de diferença nas certidões move R$ 225 mil de lugar. O app trata as duas
+hipóteses como situações distintas, calcula as duas cadeias até o fim e mostra
+quanto sobra para cada pessoa somando **todas** as sucessões.
 
 ### Aritmética exata
 
@@ -52,10 +71,44 @@ npm run dev
 Outros comandos:
 
 ```bash
-npm test         # 60 testes cobrindo as regras de sucessão e o layout da árvore
+npm test         # 98 testes: regras de sucessão, cumulação, layout e exportações
 npm run build    # gera dist/
 npm run preview  # serve o build local
 ```
+
+---
+
+## Como se usa
+
+Ao abrir, o app **não vem preenchido com dado nenhum**. Ele pergunta de onde
+você quer partir: retomar o rascunho guardado neste navegador, começar um
+processo em branco, ou carregar um dos 22 modelos. Nada do que se digita sai da
+máquina — o rascunho fica em `localStorage` e o cálculo roda todo no navegador.
+
+Um processo começa com um óbito. Para cumular, há dois caminhos:
+
+- **Acrescentar falecido** na linha do tempo, e descrever a família dele; ou
+- marcar um herdeiro como *faleceu depois* e clicar em **abrir o inventário
+  dele(a)** — o app cria o segundo óbito já ligado, na posição cronológica
+  certa, com os filhos daquela pessoa copiados (mesmos identificadores, para
+  que a soma final feche) e o quinhão herdado já somado ao acervo.
+
+A ordem dos cartões **é** a ordem dos óbitos, e é ela que decide quem herdou de
+quem. Quando a ordem contradiz a situação declarada de alguém, o app avisa.
+
+## Relatórios
+
+Dois formatos, ambos gerados no navegador:
+
+- **Planilha (.xlsx)** — uma aba por sucessão, mais processo, destino final,
+  raciocínio e ressalvas. Valores como número, com formato de moeda e
+  percentual, para que somas e conferências funcionem. Escrita sem
+  dependências: o `.xlsx` é um ZIP de XML, e há um empacotador de ~120 linhas
+  em `src/lib/exportar/`.
+- **PDF** — capa com o total consolidado, uma página por sucessão, destino
+  final dos bens, fundamentação por extenso e pontos de atenção. O gerador só
+  é baixado quando alguém clica: sozinho ele pesa mais que o resto do
+  aplicativo.
 
 ---
 
@@ -86,22 +139,29 @@ src/
     moeda.ts         conversão e formatação em BRL
     arvore.ts        manipulação da árvore de pessoas
     resumo.ts        exportação do resultado em texto
+    alertas.ts       reúne e deduplica as ressalvas do processo inteiro
+    exportar/
+      zip.ts         empacotador ZIP mínimo, sem dependências
+      planilha.ts    escritor de .xlsx (estilos, moeda, percentual, mesclagem)
+      xlsx.ts        as abas do relatório em planilha
+      pdf.ts         o relatório em PDF, carregado sob demanda
   engine/            ← o motor; não depende de React
     tipos.ts         modelo de domínio e tabela de regimes
     descendentes.ts  estirpes e direito de representação
     ascendentes.ts   graus e divisão por linhas
     colaterais.ts    irmãos, sobrinhos, tios e 4º grau
     calcular.ts      orquestra tudo: massa, vocação, legítima, colação
-    __tests__/       60 testes
+    cumulativo.ts    a cadeia de óbitos, os aportes entre espólios e o consolidado
+    __tests__/       98 testes
   components/
     ui/              primitivos de interface e conjunto de ícones
-    wizard/          construção do caso e galeria de cenários
+    wizard/          abertura, linha do tempo dos óbitos e construção do caso
     arvore/          layout (puro) e renderização SVG da árvore
-    resultado/       resumo, partilha, raciocínio passo a passo e ressalvas
+    resultado/       resumo, partilha, destino final, raciocínio e ressalvas
   data/
-    cenarios.ts      16 casos prontos
+    modelos.ts       22 casos prontos, 6 deles cumulativos
   store/
-    caso.ts          o caso em edição e seu resultado
+    inventario.ts    o processo em edição, os elos entre óbitos e o resultado
     tema.ts          preferência de tema (claro/escuro)
 ```
 
@@ -121,6 +181,12 @@ holdings familiares e usufrutos já constituídos.
 Nos dois pontos em que a doutrina não é pacífica — concorrência na comunhão
 parcial e reserva de 1/4 na filiação híbrida — a premissa adotada fica visível
 e pode ser invertida em *Premissas interpretativas*, para comparar resultados.
+
+**No inventário cumulativo, a economia é processual e não tributária:** há
+tantas transmissões *causa mortis* quantos forem os óbitos, e o ITCMD é devido
+em cada uma, sobre o valor dos bens ao tempo de cada abertura de sucessão. O
+mesmo bem pode ser tributado duas vezes em poucos meses. O app avisa, mas não
+calcula o imposto.
 
 Ferramenta de estudo e simulação. Não substitui a análise de um advogado no
 caso concreto.

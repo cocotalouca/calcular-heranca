@@ -3,6 +3,7 @@ import type {
   Caso,
   Colaterais,
   Conjuge,
+  Inventario,
   Irmao,
   Patrimonio,
   Pessoa,
@@ -23,6 +24,15 @@ export function pessoa(
   return { id: id('p'), nome, situacao, filhos, filhoDoConjuge }
 }
 
+/** Pessoa com id escolhido a dedo — para amarrar inventários cumulativos. */
+export function pessoaId(
+  idFixo: string,
+  nome: string,
+  over: Partial<Pessoa> = {},
+): Pessoa {
+  return { id: idFixo, nome, situacao: 'vivo', filhos: [], filhoDoConjuge: true, ...over }
+}
+
 export function irmao(
   nome: string,
   vinculo: 'bilateral' | 'unilateral' = 'bilateral',
@@ -34,6 +44,7 @@ export function irmao(
 
 export function conjuge(over: Partial<Conjuge> = {}): Conjuge {
   return {
+    id: id('c'),
     existe: true,
     nome: 'Cônjuge',
     vinculo: 'casamento',
@@ -46,6 +57,7 @@ export function conjuge(over: Partial<Conjuge> = {}): Conjuge {
 }
 
 export const semConjuge: Conjuge = {
+  id: 'sem-conjuge',
   existe: false,
   nome: '',
   vinculo: 'casamento',
@@ -86,6 +98,7 @@ export function patrimonio(over: Partial<Patrimonio> = {}): Patrimonio {
 
 export function caso(over: Partial<Caso> = {}): Caso {
   return {
+    id: id('o'),
     nomeFalecido: 'De cujus',
     conjuge: semConjuge,
     descendentes: [],
@@ -95,6 +108,15 @@ export function caso(over: Partial<Caso> = {}): Caso {
     opcoes: { ...OPCOES_PADRAO },
     ...over,
   }
+}
+
+/** Óbito com id fixo, para que os elos entre inventários possam apontar para ele. */
+export function obito(idFixo: string, over: Partial<Caso> = {}): Caso {
+  return { ...caso(over), id: idFixo }
+}
+
+export function inventario(obitos: Caso[], titulo = 'Processo de teste'): Inventario {
+  return { titulo, obitos }
 }
 
 export function comRegime(r: Regime, over: Partial<Conjuge> = {}): Conjuge {

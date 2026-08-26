@@ -80,8 +80,8 @@ const TOM: Record<Alerta['nivel'], { cor: string; icone: string; rotulo: string 
 
 const ORDEM: Alerta['nivel'][] = ['critico', 'atencao', 'info']
 
-export function PainelAlertas({ resultado }: { resultado: Resultado }) {
-  const ordenados = [...resultado.alertas].sort(
+export function PainelAlertas({ alertas }: { alertas: Alerta[] }) {
+  const ordenados = [...alertas].sort(
     (a, b) => ORDEM.indexOf(a.nivel) - ORDEM.indexOf(b.nivel),
   )
 
@@ -117,6 +117,7 @@ export function PainelAlertas({ resultado }: { resultado: Resultado }) {
                 <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold">
                   {a.titulo}
                   <Selo cor={t.cor}>{t.rotulo}</Selo>
+                  {a.obitoNome && <Selo cor="var(--texto-3)">{a.obitoNome}</Selo>}
                 </p>
                 <p className="mt-1 text-[13px] leading-relaxed text-[var(--texto-2)]">{a.texto}</p>
                 {a.fundamento && (

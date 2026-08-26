@@ -43,8 +43,10 @@ export function coletarAscendentes(a: Ascendentes): ColetaAscendentes {
     {
       grau: 1,
       descricao: 'Pais (1º grau)',
-      paterna: { rotulo: 'Pai', quantidade: a.pai ? 1 : 0 },
-      materna: { rotulo: 'Mãe', quantidade: a.mae ? 1 : 0 },
+      // O nome proprio importa quando o ascendente tambem e' autor de heranca
+      // no processo: e' por ele que o quinhao sera' reconhecido no relatorio.
+      paterna: { rotulo: a.nomePai?.trim() || 'Pai', quantidade: a.pai ? 1 : 0 },
+      materna: { rotulo: a.nomeMae?.trim() || 'Mãe', quantidade: a.mae ? 1 : 0 },
     },
     {
       grau: 2,

@@ -1,57 +1,66 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import type { Quota, Resultado } from '@/engine/tipos'
+import type { Aporte, Quota, Resultado } from '@/engine/tipos'
 import { formatarCentavos } from '@/lib/moeda'
-import { Botao, Selo, Vazio } from '@/components/ui/primitivos'
-import { IconeCheck, IconeCopiar, IconeDescendentes } from '@/components/ui/icones'
+import { Selo, Vazio } from '@/components/ui/primitivos'
+import { IconeDescendentes, IconeElo } from '@/components/ui/icones'
 import { corDaQuota } from './cores'
 
 export function PainelPartilha({
   resultado,
+  aportes,
   selecionado,
   onSelecionar,
-  onCopiar,
-  copiado,
-  onAbrirGaleria,
+  nomeDoObito,
 }: {
   resultado: Resultado
+  aportes: Aporte[]
   selecionado: string | null
   onSelecionar: (id: string | null) => void
-  onCopiar: () => void
-  copiado: boolean
-  onAbrirGaleria: () => void
+  nomeDoObito: (obitoId: string) => string | undefined
 }) {
   const { massa, quotas, meacao } = resultado
 
-  if (quotas.length === 0) {
+  if (quotas.length === 0 && !meacao) {
     return (
       <Vazio
         icone={<IconeDescendentes tamanho={20} />}
         titulo="Nenhum herdeiro chamado"
-        texto="Descreva a família no formulário — ou carregue um caso de exemplo — para ver a partilha se montar."
-        acao={
-          <Botao variante="primario" onClick={onAbrirGaleria}>
-            Ver casos de exemplo
-          </Botao>
-        }
+        texto="Descreva a família e o patrimônio no formulário ao lado para ver a partilha se montar."
       />
     )
   }
 
   return (
     <div className="space-y-4">
+      {/* --------------------- o que veio de outra sucessão --------------------- */}
+      {aportes.length > 0 && (
+        <div className="rounded-2xl border border-[color-mix(in_srgb,var(--c-conjuge)_28%,transparent)] bg-[color-mix(in_srgb,var(--c-conjuge)_7%,transparent)] px-4 py-3">
+          <p className="flex items-center gap-1.5 text-[13px] font-bold text-[var(--c-conjuge)]">
+            <IconeElo tamanho={14} />
+            Este acervo já inclui o que o falecido havia herdado
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {aportes.map((a, i) => (
+              <div key={i} className="flex items-start justify-between gap-3">
+                <p className="min-w-0 text-[12px] leading-relaxed text-[var(--texto-2)]">
+                  {a.explicacao}
+                </p>
+                <span className="num shrink-0 text-[13px] font-bold text-[var(--c-conjuge)]">
+                  {formatarCentavos(a.centavos)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ------------------------- faixa de partilha ------------------------- */}
       {massa.herancaLiquidaCentavos > 0n && (
         <FaixaPartilha quotas={quotas} selecionado={selecionado} onSelecionar={onSelecionar} />
       )}
 
-      <div className="flex items-center justify-between gap-3">
-        <h4 className="titulo text-[16px] font-semibold">Quinhão de cada herdeiro</h4>
-        <Botao variante="fantasma" tamanho="sm" onClick={onCopiar}>
-          {copiado ? <IconeCheck tamanho={14} /> : <IconeCopiar tamanho={14} />}
-          {copiado ? 'Copiado' : 'Copiar resumo'}
-        </Botao>
-      </div>
+      <h4 className="titulo text-[16px] font-semibold">Quinhão de cada herdeiro</h4>
 
       <div className="space-y-2">
         {meacao && (
@@ -59,6 +68,7 @@ export function PainelPartilha({
             nome={meacao.nome}
             valor={meacao.valorCentavos}
             texto={meacao.explicacao}
+            destino={meacao.destinoObitoId ? nomeDoObito(meacao.destinoObitoId) : undefined}
           />
         )}
 
@@ -68,6 +78,7 @@ export function PainelPartilha({
             quota={q}
             indice={i}
             aberto={selecionado === q.id}
+            destino={q.destinoObitoId ? nomeDoObito(q.destinoObitoId) : undefined}
             onToggle={() => onSelecionar(selecionado === q.id ? null : q.id)}
           />
         ))}
@@ -135,7 +146,17 @@ function FaixaPartilha({
 
 /* ------------------------------ cartões ------------------------------ */
 
-function CartaoMeacao({ nome, valor, texto }: { nome: string; valor: bigint; texto: string }) {
+function CartaoMeacao({
+  nome,
+  valor,
+  texto,
+  destino,
+}: {
+  nome: string
+  valor: bigint
+  texto: string
+  destino?: string
+}) {
   const [aberto, setAberto] = useState(false)
   return (
     <button
@@ -147,6 +168,7 @@ function CartaoMeacao({ nome, valor, texto }: { nome: string; valor: bigint; tex
           <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold">
             {nome}
             <Selo cor="var(--c-meacao)">meação · não é herança</Selo>
+            {destino && <Selo cor="var(--c-conjuge)">segue para {destino}</Selo>}
           </p>
           <p className="mt-0.5 text-[12px] text-[var(--texto-3)]">
             Direito próprio decorrente do regime de bens
@@ -176,11 +198,13 @@ function CartaoQuota({
   quota,
   indice,
   aberto,
+  destino,
   onToggle,
 }: {
   quota: Quota
   indice: number
   aberto: boolean
+  destino?: string
   onToggle: () => void
 }) {
   const cor = corDaQuota(quota)
@@ -196,9 +220,7 @@ function CartaoQuota({
       className="w-full overflow-hidden rounded-2xl border text-left transition hover:bg-[var(--surface-2)]"
       style={{
         borderColor: aberto ? `color-mix(in srgb, ${cor} 48%, transparent)` : 'var(--border)',
-        background: aberto
-          ? `color-mix(in srgb, ${cor} 7%, var(--surface))`
-          : 'var(--surface)',
+        background: aberto ? `color-mix(in srgb, ${cor} 7%, var(--surface))` : 'var(--surface)',
       }}
     >
       <div className="flex items-stretch">
@@ -212,6 +234,10 @@ function CartaoQuota({
                   <Selo cor="var(--c-descendente)">representa {quota.representando}</Selo>
                 )}
                 {quota.tipo === 'legado' && <Selo cor="var(--c-legado)">testamento</Selo>}
+                {destino && <Selo cor="var(--c-conjuge)">segue para {destino}</Selo>}
+                {quota.transmissaoPendente && (
+                  <Selo cor="var(--perigo)">inventário não cadastrado</Selo>
+                )}
               </p>
               <p className="mt-0.5 text-[12px] text-[var(--texto-3)]">{quota.qualificacao}</p>
             </div>
@@ -247,6 +273,16 @@ function CartaoQuota({
                   {quota.observacao && (
                     <p className="text-[12.5px] leading-relaxed text-[var(--texto-2)]">
                       {quota.observacao}
+                    </p>
+                  )}
+                  {destino && (
+                    <p className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-[var(--c-conjuge)]">
+                      <span className="mt-[3px] shrink-0">
+                        <IconeElo tamanho={12} />
+                      </span>
+                      Este quinhão foi adquirido no instante da morte e integra o espólio de{' '}
+                      {destino}: quem o recebe de fato são os herdeiros dele, na sucessão
+                      cumulada.
                     </p>
                   )}
                   <div className="flex flex-wrap gap-1.5">

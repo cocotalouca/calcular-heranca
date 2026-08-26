@@ -203,6 +203,7 @@ function Aresta({ aresta }: { aresta: ArestaVis }) {
 
 const MARCA_SITUACAO: Partial<Record<Situacao, string>> = {
   pre_morto: '†',
+  pos_morto: '⧖',
   comoriente: '†',
   renunciante: '↩',
   indigno: '⊘',
@@ -225,6 +226,10 @@ function No({
   const cor = COR_PAPEL[no.papel]
   const foraDaPartilha = !no.herdeiro && no.papel !== 'falecido'
   const marca = no.situacao ? MARCA_SITUACAO[no.situacao] : undefined
+  // Quem morreu ANTES nao herdou e aparece riscado. Quem morreu DEPOIS herdou:
+  // o quinhao dele existe e apenas segue para outro inventario.
+  const riscado = no.situacao === 'pre_morto' || no.situacao === 'comoriente'
+  const transmite = no.situacao === 'pos_morto'
   const x = no.x * GX - W / 2
   const y = no.y * GY - H / 2
 
@@ -272,7 +277,7 @@ function No({
           fill={foraDaPartilha ? 'var(--texto-3)' : 'var(--texto)'}
           fontSize="13.5"
           fontWeight="600"
-          style={{ textDecoration: marca === '†' ? 'line-through' : undefined }}
+          style={{ textDecoration: riscado ? 'line-through' : undefined }}
         >
           {cortar(no.nome, 18)}
         </text>
@@ -316,6 +321,31 @@ function No({
               fill="var(--texto-2)"
             >
               {marca}
+            </text>
+          </g>
+        )}
+
+        {(no.obitoLigado || transmite) && (
+          <g transform={`translate(${W - 20} ${H - 13})`}>
+            <rect
+              x={-34}
+              y={-8}
+              width={48}
+              height={16}
+              rx={8}
+              fill="var(--ink-800)"
+              stroke={no.obitoLigado ? 'var(--c-conjuge)' : 'var(--aviso)'}
+              strokeWidth="1"
+            />
+            <text
+              x={-10}
+              textAnchor="middle"
+              dy="3.5"
+              fontSize="8.5"
+              fontWeight="700"
+              fill={no.obitoLigado ? 'var(--c-conjuge)' : 'var(--aviso)'}
+            >
+              {no.obitoLigado ? 'transmite' : 'sem inv.'}
             </text>
           </g>
         )}
@@ -387,6 +417,7 @@ function Legenda() {
     { cor: 'var(--c-ascendente)', rotulo: 'Ascendentes' },
     { cor: 'var(--c-colateral)', rotulo: 'Colaterais' },
     { cor: 'var(--c-fora)', rotulo: 'Fora da partilha' },
+    { cor: 'var(--c-conjuge)', rotulo: 'Herdou e transmite (inventario cumulado)' },
   ]
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[var(--border)] px-4 py-2.5">

@@ -1,5 +1,5 @@
 import { Fracao, F } from '@/lib/fracao'
-import { SITUACOES_COM_REPRESENTACAO, type Colaterais, type Irmao, type Pessoa } from './tipos'
+import { SITUACOES_COM_REPRESENTACAO, herda, type Colaterais, type Irmao, type Pessoa } from './tipos'
 
 export interface HerdeiroColateral {
   id: string
@@ -42,7 +42,9 @@ const PESO = { bilateral: 2, unilateral: 1 } as const
  *    (art. 1.853), por isso o filho de um sobrinho pré-morto não sobe.
  */
 export function coletarColaterais(c: Colaterais): ColetaColaterais {
-  const irmaosVivos = c.irmaos.filter((i) => i.situacao === 'vivo')
+  // O irmao pos-morto herdou e continua sendo cabeca de estirpe: e' o espolio
+  // dele que recolhe o quinhao, nao os sobrinhos por representacao.
+  const irmaosVivos = c.irmaos.filter((i) => herda(i.situacao))
   const irmaosRepresentaveis = c.irmaos.filter(
     (i) =>
       SITUACOES_COM_REPRESENTACAO.includes(i.situacao) &&
@@ -96,7 +98,7 @@ export function coletarColaterais(c: Colaterais): ColetaColaterais {
 
 /** Sobrinhos vivos de um irmão — únicos representantes admitidos (art. 1.853). */
 function sobrinhosAptos(irmao: Irmao): Pessoa[] {
-  return irmao.filhos.filter((f) => f.situacao === 'vivo')
+  return irmao.filhos.filter((f) => herda(f.situacao))
 }
 
 /**
@@ -115,7 +117,7 @@ function partilhaComIrmaoVivo(
     const quota = F(PESO[irmao.vinculo], pesoTotal)
     const vinculoTxt = irmao.vinculo === 'bilateral' ? 'bilateral' : 'unilateral'
 
-    if (irmao.situacao === 'vivo') {
+    if (herda(irmao.situacao)) {
       herdeiros.push({
         id: irmao.id,
         nome: irmao.nome,

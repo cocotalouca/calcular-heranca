@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { montarGrafo } from '@/components/arvore/layout'
 import { calcular } from '../calcular'
-import { CENARIOS } from '@/data/cenarios'
+import { MODELOS } from '@/data/modelos'
 import { caso, conjuge, irmao, patrimonio, pessoa, semAscendentes, semColaterais } from './fabrica'
 
 // Mesmas medidas do renderer, convertidas para unidades de grade.
@@ -30,16 +30,16 @@ function sobreposicoes(nos: { id: string; nome: string; x: number; y: number }[]
 
 describe('layout da árvore genealógica', () => {
   it('nenhum cenário pronto produz nós sobrepostos', () => {
-    for (const c of CENARIOS) {
-      const caso = c.montar()
+    for (const c of MODELOS) {
+      const caso = c.montar().obitos[0]
       const g = montarGrafo(caso, calcular(caso))
       expect(sobreposicoes(g.nos), `cenário "${c.titulo}"`).toEqual([])
     }
   })
 
   it('todo herdeiro do resultado aparece na árvore', () => {
-    for (const c of CENARIOS) {
-      const caso = c.montar()
+    for (const c of MODELOS) {
+      const caso = c.montar().obitos[0]
       const r = calcular(caso)
       const g = montarGrafo(caso, r)
       const idsNaArvore = new Set(g.nos.map((n) => n.id))
@@ -53,8 +53,8 @@ describe('layout da árvore genealógica', () => {
   })
 
   it('todo nó da árvore com quota traz a mesma fração do resultado', () => {
-    for (const c of CENARIOS) {
-      const caso = c.montar()
+    for (const c of MODELOS) {
+      const caso = c.montar().obitos[0]
       const r = calcular(caso)
       const g = montarGrafo(caso, r)
       for (const no of g.nos) {
@@ -125,8 +125,8 @@ describe('layout da árvore genealógica', () => {
   })
 
   it('os limites do grafo envolvem todos os nós', () => {
-    for (const c of CENARIOS) {
-      const caso = c.montar()
+    for (const c of MODELOS) {
+      const caso = c.montar().obitos[0]
       const g = montarGrafo(caso, calcular(caso))
       for (const n of g.nos) {
         expect(n.x).toBeGreaterThanOrEqual(g.limites.minX)
