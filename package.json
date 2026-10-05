@@ -1,6 +1,7 @@
 {
   "name": "partilha-justa",
   "private": true,
+  "license": "SEE LICENSE IN LICENSE",
   "version": "1.0.0",
   "type": "module",
   "description": "Calculadora de heranca e partilha conforme o Codigo Civil brasileiro",

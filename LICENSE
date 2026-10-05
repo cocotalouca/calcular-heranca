@@ -1,0 +1,178 @@
+LICENÇA DE USO PROPRIETÁRIA - PARTILHA JUSTA (CALCULAR-HERANÇA)
+Versão 1.0 - outubro de 2026
+
+Copyright (c) 2026 cocotalouca (titular do repositório
+https://github.com/cocotalouca/calcular-heranca). Todos os direitos reservados.
+
+O código-fonte deste repositório é disponibilizado publicamente apenas para
+consulta. A disponibilidade pública NÃO constitui licença de código aberto nem
+autorização de uso fora das hipóteses expressamente previstas abaixo.
+
+-------------------------------------------------------------------------------
+1. DEFINIÇÕES
+-------------------------------------------------------------------------------
+
+1.1. "Licenciante": o titular dos direitos autorais sobre o Software,
+     identificado no cabeçalho desta Licença.
+
+1.2. "Software": o programa de computador "Partilha Justa", compreendendo o
+     código-fonte, o código compilado, a interface, os textos, os modelos de
+     cálculo, a documentação e quaisquer versões, atualizações ou partes deles.
+
+1.3. "Implantação Oficial": exclusivamente a instância do Software publicada
+     pelo próprio Licenciante, atualmente em
+     https://cocotalouca.github.io/calcular-heranca/, ou em outro endereço que
+     o Licenciante venha a indicar neste repositório.
+
+1.4. "Usuário": qualquer pessoa, física ou jurídica, que acesse o Software.
+
+1.5. "Uso Externo": qualquer utilização do Software, total ou parcial, fora da
+     Implantação Oficial, incluindo, sem limitação: (a) copiar, clonar, baixar
+     ou reproduzir o código para execução; (b) hospedar, publicar ou
+     disponibilizar o Software em qualquer domínio, servidor, intranet,
+     aplicativo ou rede, pública ou privada; (c) executá-lo localmente para fins
+     profissionais ou comerciais; (d) modificá-lo, adaptá-lo, traduzi-lo ou criar
+     obras derivadas; (e) incorporá-lo, no todo ou em parte, a outro produto ou
+     serviço; (f) distribuí-lo, sublicenciá-lo, vendê-lo, alugá-lo ou cedê-lo.
+
+1.6. "Mês de Uso": cada período de 30 (trinta) dias corridos, ou fração, em que
+     ocorrer Uso Externo, contado a partir do primeiro ato de Uso Externo.
+
+1.7. "Instância": cada cópia, implantação, endereço, servidor ou produto em que
+     o Software, ou obra dele derivada, esteja em Uso Externo.
+
+-------------------------------------------------------------------------------
+2. USO GRATUITO PERMITIDO
+-------------------------------------------------------------------------------
+
+2.1. O Licenciante concede ao Usuário licença gratuita, não exclusiva,
+     intransferível, revogável e não sublicenciável para acessar e utilizar o
+     Software exclusivamente por meio da Implantação Oficial, inclusive para
+     fins profissionais, bem como para utilizar livremente os relatórios e
+     arquivos (PDF, XLSX e similares) gerados a partir dela.
+
+2.2. É igualmente permitido, sem ônus, visualizar o código-fonte no GitHub e
+     criar "fork" dentro da plataforma GitHub apenas na medida exigida pelos
+     Termos de Serviço do GitHub. Tal permissão não autoriza a execução, a
+     publicação, a modificação ou qualquer outro Uso Externo do fork.
+
+-------------------------------------------------------------------------------
+3. USO EXTERNO - LICENÇA COMERCIAL OBRIGATÓRIA E ROYALTIES
+-------------------------------------------------------------------------------
+
+3.1. Todo e qualquer Uso Externo depende de licença comercial prévia e por
+     escrito do Licenciante.
+
+3.2. A licença comercial sujeita o licenciado ao pagamento de royalties no
+     valor de US$ 1.000,00 (mil dólares dos Estados Unidos da América) por Mês
+     de Uso, por Instância.
+
+3.3. Os royalties são devidos antecipadamente, até o primeiro dia de cada Mês de
+     Uso, em moeda e forma indicadas pelo Licenciante. Quando o pagamento for
+     realizado em reais, a conversão observará a taxa de câmbio PTAX de venda
+     divulgada pelo Banco Central do Brasil no dia útil anterior ao pagamento.
+
+3.4. A fração de mês é cobrada como Mês de Uso integral. A cessação do Uso
+     Externo não gera direito a restituição de valores já vencidos ou pagos.
+
+3.5. O atraso no pagamento acarreta multa moratória de 2% (dois por cento),
+     juros de mora na forma da lei e correção monetária, sem prejuízo da
+     suspensão imediata da licença comercial.
+
+3.6. O licenciado deve manter registro das Instâncias e das datas de início e
+     término do Uso Externo, e exibi-lo ao Licenciante quando solicitado.
+
+-------------------------------------------------------------------------------
+4. USO EXTERNO NÃO AUTORIZADO
+-------------------------------------------------------------------------------
+
+4.1. O Uso Externo realizado sem licença comercial constitui violação de
+     direitos autorais, nos termos da Lei n. 9.609/1998 e da Lei n. 9.610/1998.
+
+4.2. Quem realizar Uso Externo sem licença, ao fazê-lo, reconhece e aceita que
+     são devidos ao Licenciante, a título de remuneração mínima pelo uso, os
+     royalties previstos na Cláusula 3, por Mês de Uso e por Instância, desde o
+     primeiro ato de Uso Externo, acrescidos dos encargos da Cláusula 3.5.
+
+4.3. O pagamento previsto na Cláusula 4.2 não regulariza o uso nem afasta o
+     direito do Licenciante de exigir a cessação imediata da violação, a
+     remoção das cópias, a indenização por perdas e danos excedentes e as
+     demais medidas cíveis e penais cabíveis.
+
+-------------------------------------------------------------------------------
+5. RESTRIÇÕES GERAIS
+-------------------------------------------------------------------------------
+
+5.1. É vedado, em qualquer hipótese e sem autorização escrita: (a) remover ou
+     alterar avisos de direitos autorais, marcas ou esta Licença; (b) realizar
+     engenharia reversa da Implantação Oficial para fins de reprodução;
+     (c) utilizar o nome "Partilha Justa" ou sinais distintivos do Licenciante
+     em produto ou serviço de terceiros; (d) apresentar o Software, ou obra
+     derivada, como de autoria própria.
+
+5.2. Nenhum direito é concedido por implicação, preclusão ou de qualquer outra
+     forma além dos expressamente previstos nesta Licença. Todos os direitos não
+     concedidos ficam reservados ao Licenciante.
+
+-------------------------------------------------------------------------------
+6. ISENÇÃO DE GARANTIAS E LIMITAÇÃO DE RESPONSABILIDADE
+-------------------------------------------------------------------------------
+
+6.1. O Software é ferramenta de estudo e simulação, fornecido "no estado em
+     que se encontra", sem garantia de qualquer natureza, expressa ou
+     implícita, inclusive de exatidão, adequação a finalidade específica ou
+     ausência de erros. Os resultados não substituem a análise de advogado no
+     caso concreto.
+
+6.2. Na máxima extensão permitida pela lei, o Licenciante não responde por
+     danos diretos, indiretos, lucros cessantes ou prejuízos decorrentes do uso
+     ou da impossibilidade de uso do Software.
+
+-------------------------------------------------------------------------------
+7. VIGÊNCIA, REVOGAÇÃO E ALTERAÇÃO
+-------------------------------------------------------------------------------
+
+7.1. O Licenciante pode alterar esta Licença ou o valor dos royalties a
+     qualquer tempo, mediante publicação de nova versão neste repositório,
+     respeitadas as licenças comerciais escritas já celebradas durante o período
+     pago.
+
+7.2. A violação de qualquer cláusula extingue automaticamente as licenças
+     concedidas ao infrator, sem prejuízo dos valores devidos.
+
+-------------------------------------------------------------------------------
+8. LEI APLICÁVEL E FORO
+-------------------------------------------------------------------------------
+
+8.1. Esta Licença rege-se pelas leis da República Federativa do Brasil.
+
+8.2. Fica eleito o foro do domicílio do Licenciante para dirimir quaisquer
+     controvérsias, com renúncia a qualquer outro, por mais privilegiado que
+     seja, ressalvadas as hipóteses de competência absoluta.
+
+-------------------------------------------------------------------------------
+9. CONTATO PARA LICENCIAMENTO COMERCIAL
+-------------------------------------------------------------------------------
+
+Pedidos de licença comercial, pagamento de royalties e comunicações: contato@pfbadv.com
+
+===============================================================================
+ENGLISH SUMMARY (for convenience only; the Portuguese text above prevails)
+===============================================================================
+
+Copyright (c) 2026 cocotalouca. All rights reserved. This is NOT an open-source
+license. The source code is publicly visible for reference only.
+
+- FREE USE: anyone may use the tool at no cost, including professionally,
+  exclusively through the Official Deployment run by the Licensor
+  (https://cocotalouca.github.io/calcular-heranca/).
+- ANY OTHER USE (copying, self-hosting, running, modifying, creating derivative
+  works, embedding or redistributing the Software, in whole or in part) requires
+  a prior written commercial license and the payment of ROYALTIES OF
+  USD 1,000.00 PER MONTH OF USE (or fraction thereof), PER INSTANCE, payable in
+  advance.
+- Unlicensed use is copyright infringement; the infringer owes the same
+  royalties from the first day of use, without prejudice to an injunction,
+  further damages and other remedies.
+- Provided "AS IS", without warranty. Governed by Brazilian law.
+- Licensing contact: contato@pfbadv.com

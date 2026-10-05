@@ -114,6 +114,10 @@ Dois formatos, ambos gerados no navegador:
 
 ## Publicando
 
+> **Atenção:** a publicação descrita abaixo é reservada ao titular. Copiar,
+> hospedar, executar ou modificar o Software fora da implantação oficial exige
+> licença comercial e pagamento de royalties - veja a seção [Licença](#licença).
+
 O `vite.config.ts` usa `base: './'`, então o `dist/` funciona em qualquer
 hospedagem — inclusive em subpasta, como `usuario.github.io/repositorio/`.
 
@@ -190,3 +194,19 @@ calcula o imposto.
 
 Ferramenta de estudo e simulação. Não substitui a análise de um advogado no
 caso concreto.
+
+---
+
+## Licença
+
+Software proprietário, com código-fonte visível apenas para consulta - **não é
+código aberto**. Termos integrais em [`LICENSE`](LICENSE).
+
+- **Uso gratuito:** liberado a qualquer pessoa, inclusive para fins
+  profissionais, exclusivamente na implantação oficial,
+  <https://cocotalouca.github.io/calcular-heranca/>.
+- **Qualquer outro uso** (copiar, hospedar, executar, modificar, criar obra
+  derivada ou incorporar o código, no todo ou em parte) depende de licença
+  comercial prévia e por escrito, com royalties de **US$ 1.000,00 por mês de
+  uso, por instância**.
+- Licenciamento comercial: contato@pfbadv.com
